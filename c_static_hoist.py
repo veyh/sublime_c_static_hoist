@@ -53,7 +53,7 @@ class CStaticHoistCommand(sublime_plugin.TextCommand):
   def get_declarations(self):
     declarations = []
 
-    for match in re.finditer(FN_REGEX, self.file_contents(), re.X):
+    for match in re.finditer(FN_REGEX, self.content_without_comments(), re.X):
       if not self.is_static_function_definition(match.group(0)):
         continue
 
@@ -62,9 +62,20 @@ class CStaticHoistCommand(sublime_plugin.TextCommand):
 
     return declarations
 
-  def file_contents(self):
+  def content_without_comments(self):
     whole_file_region = sublime.Region(0, self.view.size())
-    return self.view.substr(whole_file_region)
+    content = self.view.substr(whole_file_region)
+    return self.remove_comments(content)
+
+  def remove_comments(self, content):
+    # NOTE: Only strips out lines beginning with // for now
+    lines = []
+
+    for line in content.split("\n"):
+      if not re.match(r"^\s*//", line):
+        lines.append(line)
+
+    return "\n".join(lines)
 
   def is_static_function_definition(self, content):
     return not ";" in content
